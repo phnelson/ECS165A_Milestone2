@@ -5,7 +5,7 @@ from random import choice, randrange
 
 # Student Id and 4 grades
 db = Database()
-grades_table = db.create_table('Grades', 0, 5)
+grades_table = db.create_table('Grades', 5, 0)
 query = Query(grades_table)
 keys = []
 
@@ -47,7 +47,7 @@ for i in range(0, 10000, 100):
 agg_time_1 = process_time()
 print("Aggregate 10k of 100 record batch took:\t", agg_time_1 - agg_time_0)
 
-# Measuring Delete Performance
+#Measuring Delete Performance
 delete_time_0 = process_time()
 for i in range(0, 10000):
     query.delete(906659671 + i)

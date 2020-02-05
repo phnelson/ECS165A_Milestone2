@@ -16,13 +16,17 @@ class Page:
     def read(self, offset):
         #Reads the value starting at offset for COL_DATA_SIZE bytes into value
         value = self.data[offset:offset+COL_DATA_SIZE]
-        return value
+
+        ret_value = int.from_bytes(value, byteorder='little')
+        return ret_value
 
     def write(self, value):
         #Starting index for new entry saved as offset
         offset = self.num_records * COL_DATA_SIZE
         #Write data into page starting at offset for COL_DATA_SIZE bytes
-        self.data[offset:(offset + COL_DATA_SIZE)] = value
+        #del self.data[offset:offset+8]
+        replace = value.to_bytes(8, byteorder='little')
+        self.data[offset:offset+8] = replace
         #Increment the num_record count for page
         self.num_records += 1
         #Return offset to caller
@@ -30,7 +34,8 @@ class Page:
 
     def edit(self, offset, value):
         #Edits the value starting at offset for COL_DATA_SIZE bytes to the new value
-        self.data[offset:offset+COL_DATA_SIZE] = value
+        replace = value.to_bytes(COL_DATA_SIZE, byteorder='little')
+        self.data[offset:offset+COL_DATA_SIZE] = replace
 
 class PageBlock:
 
@@ -61,7 +66,8 @@ class PageBlock:
         return self.pages[self.indir].read(offset)
 
     def getNextOffset(self):
-        return self.entry_count
+        val = self.pages[self.rid].num_records
+        return val
 
     def readCol(self, index, offset):
         return self.pages[index].read(offset)
@@ -74,8 +80,7 @@ class PageBlock:
         self.pages[index].edit(offset, value)
 
     def deleteRecord(self, offset):
-        self.pages[self.rid].edit(offset, None)
-        #self.pages[self.indir].edit(None, offset)
+        self.pages[self.rid].edit(offset, 0)
 
 class PageRange:
 
@@ -96,7 +101,7 @@ class PageRange:
     
     def hasCapacityBase(self):
         #Checks working page_block[base_count] for capacity
-        if self.page_blocks[self.base_count].hasCapacityEntry == False :
+        if self.page_blocks[self.base_count].hasCapacityEntry() == False :
             #If no capacity, itterate to next base page_block
             self.base_count += 1
             #Checks that new base page_block index does not exceed bounds
@@ -131,12 +136,12 @@ class PageRange:
 
     def nextBaseRid(self):
         prerid = self.page_blocks[self.base_count].getNextOffset()
-        rid = (self.base_count * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
+        rid = ((self.base_count) * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
         return rid
 
     def nextTailRid(self):
         prerid = self.page_blocks[self.tail_count].getNextOffset()
-        rid = (self.tail_count * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
+        rid = ((self.tail_count) * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
         return rid
 
     def readBlock(self, pageBlock, offset):
@@ -148,15 +153,11 @@ class PageRange:
         
         return readBlock
 
-    def writeBaseBlock(self, *columns):
-        #Writes the first data column into first page of the block, recording the offset
-        offset = self.page_blocks[self.base_count].writeCol(0, columns[0])
-        #For all remaining columns
-        for index in range(1,self.total):
+    def writeBaseBlock(self, columns):
+        #Writes the index data column into index page of the block
+        for index in range(0,self.total):
             #Write columns[index] into block pageBlock, page index, data[index]
             self.page_blocks[self.base_count].writeCol(index, columns[index])
-
-        return offset
 
     def writeTailBlock(self, *columns):
         #Writes the first data column into first page of the block, recording the offset

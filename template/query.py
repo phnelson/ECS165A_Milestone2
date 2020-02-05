@@ -32,23 +32,23 @@ class Query:
     def insert(self, *columns):
         key = columns[self.table.key]
         #Insert value into available base -> get rid->(page, offset)
-        rid = self.table.insertRecord(*columns)
+        rid = self.table.insertRecord(columns)
         #Add key,rid pair to dictionary
-        self.table.page_dictionary.add(key, rid)
+        self.table.page_directory[key] = rid
 
     """
     # Read a record with specified key
     """
 
-    def select(self, key, query_columns):
-        rid = self.table.page_directory(key)
+    def select(self, key, *query_columns):
+        rid = self.table.page_directory.get(key)
         #Go into memory and read the value stored at rid->indirection
         record = self.table.readRecord(rid)
         returnRecord = []
         #loops through range(len(query_columns)
         for i in range(len(query_columns)):
-            if query_columns(i) == 1:
-            #read value into temp structure
+            if query_columns[i] == 1:
+                #read value into temp structure
                 returnRecord.append(record[i])
                 #returnRecord.append(None) ???
         #returns temp structure of read values
@@ -62,8 +62,9 @@ class Query:
       schema_encoding = '0' * self.table.num_columns
       key = columns[self.table.key]
       rid = self.table.page_directory.get(key)
-      #go into memory with the rid, update next available tail record and link rid->inderection 
-      self.table.updateRecord(rid, *columns)
+      if rid != None:
+          #go into memory with the rid, update next available tail record and link rid->inderection 
+          self.table.updateRecord(rid, columns)
 
     """
     :param start_range: int         # Start of the key range to aggregate 
@@ -76,7 +77,7 @@ class Query:
         selected_cols = []
         data = []
 
-        num_cols = self.table.num_cols
+        num_cols = self.table.num_columns
 
         for i in range(0, num_cols):
           if i == aggregate_column_index:

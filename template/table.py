@@ -1,5 +1,6 @@
 from template.page import *
 from time import time
+import sys
 
 class Record:
 
@@ -34,16 +35,16 @@ class Table:
  
     def newPageRange(self):
         self.page_ranges.append(PageRange(self.num_columns))
-        self.curr_page_range += 1
+        self.curr_page_range = self.curr_page_range + 1
 
     def getOffset(self, rid):
         return rid % (PAGE_SIZE // COL_DATA_SIZE)
 
     def getPageR(self, rid):
-        return rid // ((BASE_CONST + TAIL_CONST)*(PAGE_SIZE // COL_DATA_SIZE))
+        return (rid // ((BASE_CONST + TAIL_CONST)*(PAGE_SIZE // COL_DATA_SIZE)))
 
     def getPageB(self, rid):
-        return (rid // (PAGE_SIZE // COL_DATA_SIZE)) % (BASE_CONST + TAIL_CONST)
+        return ((rid // (PAGE_SIZE // COL_DATA_SIZE)) % (BASE_CONST + TAIL_CONST))
 
     def getRID(self, pageR, pageB, offset):
         return (pageR*(BASE_CONST + TAIL_CONST)*(PAGE_SIZE // COL_DATA_SIZE)) + (pageB*(PAGE_SIZE // COL_DATA_SIZE)) + offset
@@ -75,6 +76,8 @@ class Table:
         pageR = self.getPageR(rid)
         pageB = self.getPageB(rid)
         offset = self.getOffset(rid)
+        #print("Calculate: Rid=",self.getRID(pageR,pageB,offset))
+        #print("Delete: Rid=",rid," pageR=",pageR," pageB=",pageB," offset=",offset)
         self.page_ranges[pageR].deleteRecord(pageB, offset)
 
     def insertRecord(self, *columns):
@@ -85,16 +88,16 @@ class Table:
         schema_encoding = '0' * self.num_columns
         currTime = time()
         base_rid = self.nextBaseRid()
-
-        format_columns = self.formatCols(None, base_rid, currTime, schema_encoding, *columns)
-        
-        self.page_ranges[self.curr_page_range].writeBaseBlock(*format_columns)
+        format_columns = self.formatCols(None, base_rid, currTime, schema_encoding, columns)
+        #format_columns = [8, 6, 7, 5, 3, 0, 9, 1]
+        print(columns)
+        self.page_ranges[self.curr_page_range].writeBaseBlock(format_columns)
 
         return base_rid
 
     def updateRecord(self, rid, *columns):
         #Check for room for tail page, if not make more room
-        if self.page_ranges[len(self.page_ranges)].hasCapacityTail() == False:
+        if self.page_ranges[self.curr_page_range].hasCapacityTail() == False:
             self.newPageRange()
 
         page_R = self.getPageR(rid)
@@ -106,9 +109,9 @@ class Table:
         currTime = time()
         tail_rid = self.nextTailRid()
 
-        format_columns = self.formatCols(indirect, tail_rid, currTime, schema_encoding, *columns)
+        format_columns = self.formatCols(indirect, tail_rid, currTime, schema_encoding, columns)
         
-        self.page_ranges[self.curr_page_range].writeTailBlock(*columns)
+        self.page_ranges[self.curr_page_range].writeTailBlock(columns)
 
         self.page_ranges[page_R].editBlock(page_B, INDIRECTION_COLUMN, page_offset, tail_rid)
     
@@ -116,6 +119,9 @@ class Table:
         pageR = self.getPageR(rid)
         pageB = self.getPageB(rid)
         offset = self.getOffset(rid)
+        print(pageR, pageB, offset)
+        print(self.curr_page_range)
+        print(len(self.page_ranges))
         indir = self.page_ranges[pageR].getIndirection(pageB, offset)
 
         if indir == None:
