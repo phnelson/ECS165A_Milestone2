@@ -25,8 +25,8 @@ class Page:
         offset = self.num_records * COL_DATA_SIZE
         #Write data into page starting at offset for COL_DATA_SIZE bytes
         #del self.data[offset:offset+8]
-        replace = value.to_bytes(8, byteorder='little')
-        self.data[offset:offset+8] = replace
+        replace = value.to_bytes(COL_DATA_SIZE, byteorder='little')
+        self.data[offset:offset+COL_DATA_SIZE] = replace
         #Increment the num_record count for page
         self.num_records += 1
         #Return offset to caller
@@ -70,7 +70,9 @@ class PageBlock:
         return val
 
     def readCol(self, index, offset):
-        return self.pages[index].read(offset)
+        val = self.pages[index].read(offset)
+        print(val)
+        return val
 
     def writeCol(self, index, value):
         offset = self.pages[index].write(value)
@@ -132,7 +134,9 @@ class PageRange:
             return True
 
     def getIndirection(self, pageBlock, offset):
-        return self.page_blocks[pageBlock].getIndirection(offset)
+        value = self.page_blocks[pageBlock].getIndirection(offset)
+        print(value)
+        return value
 
     def nextBaseRid(self):
         prerid = self.page_blocks[self.base_count].getNextOffset()
@@ -147,15 +151,17 @@ class PageRange:
     def readBlock(self, pageBlock, offset):
         readBlock = []
         #For all columns in page_block[pageBlock]
-        for index in range(self.total):
+        for index in range(self.page_blocks[pageBlock].total):
             #Read column i at ofset, append to readBlock
             readBlock.append(self.page_blocks[pageBlock].readCol(index, offset))
+            #print(readBlock[index])
+        print(index)
         
         return readBlock
 
     def writeBaseBlock(self, columns):
         #Writes the index data column into index page of the block
-        for index in range(0,self.total):
+        for index in range(self.page_blocks[self.base_count].total):
             #Write columns[index] into block pageBlock, page index, data[index]
             self.page_blocks[self.base_count].writeCol(index, columns[index])
 

@@ -41,6 +41,7 @@ class Query:
     """
 
     def select(self, key, *query_columns):
+        retList = []
         rid = self.table.page_directory.get(key)
         #Go into memory and read the value stored at rid->indirection
         record = self.table.readRecord(rid)
@@ -52,7 +53,8 @@ class Query:
                 returnRecord.append(record[i])
                 #returnRecord.append(None) ???
         #returns temp structure of read values
-        return returnRecord
+        retList.append(returnRecord)
+        return retList
                 
     """
     # Update a record with specified key and columns

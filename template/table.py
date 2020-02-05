@@ -88,9 +88,9 @@ class Table:
         schema_encoding = '0' * self.num_columns
         currTime = time()
         base_rid = self.nextBaseRid()
-        format_columns = self.formatCols(None, base_rid, currTime, schema_encoding, columns)
-        #format_columns = [8, 6, 7, 5, 3, 0, 9, 1]
-        print(columns)
+        #format_columns = self.formatCols(None, base_rid, currTime, schema_encoding, columns)
+        format_columns = [0, 6, 7, 5, 3, 0, 9, 1, 8]
+        #print(columns)
         self.page_ranges[self.curr_page_range].writeBaseBlock(format_columns)
 
         return base_rid
@@ -120,11 +120,9 @@ class Table:
         pageB = self.getPageB(rid)
         offset = self.getOffset(rid)
         print(pageR, pageB, offset)
-        print(self.curr_page_range)
-        print(len(self.page_ranges))
         indir = self.page_ranges[pageR].getIndirection(pageB, offset)
 
-        if indir == None:
+        if indir == -1:
             return rid
         else:
             return indir
@@ -136,6 +134,12 @@ class Table:
         pageR = self.getPageR(trueRID)
         pageB = self.getPageB(trueRID)
         offset = self.getOffset(trueRID)
+        print("RID:",rid)
+        print("TrueRID:",trueRID)
+        print("Read: Rid=",rid," pageR=",pageR," pageB=",pageB," offset=",offset)
         #Retrieves record
+        
         record = self.page_ranges[pageR].readBlock(pageB, offset)
+
+        print(record)
         return record
