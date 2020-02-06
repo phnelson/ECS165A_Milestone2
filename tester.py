@@ -1,5 +1,6 @@
 from template.db import Database
 from template.query import Query
+import sys
 #from lstore.config import init
 
 from random import choice, randint, sample, seed
@@ -31,6 +32,7 @@ for key in records:
             error = True
     if error:
         print('select error on', key , ':', record, ', correct:', records[key])
+        sys.exit()
     else:
         print('select on', key, ':', record)
 
@@ -49,6 +51,7 @@ for key in records:
                 error = True
         if error:
             print('update error on', original, 'and', updated_columns, ':', record, ', correct:', records[key])
+            sys.exit()
         else:
             print('update on', original, 'and', updated_columns, ':', record) 
         updated_columns[i] = None

@@ -1,5 +1,6 @@
 from template.db import Database
 from template.query import Query
+import sys
 #from lstore.config import init
 
 from random import choice, randint, sample, seed
@@ -33,6 +34,9 @@ for key in records:
         print('select error on', key , ':', record, ', correct:', records[key])
     else:
         print('select on', key, ':', record)
+
+print("Select and Insert Complete")
+sys.exit()
 
 for key in records:
     updated_columns = [None, None, None, None, None]

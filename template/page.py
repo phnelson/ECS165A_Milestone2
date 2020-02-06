@@ -15,17 +15,17 @@ class Page:
 
     def read(self, offset):
         #Reads the value starting at offset for COL_DATA_SIZE bytes into value
-        value = self.data[offset:offset+COL_DATA_SIZE]
-
+        tru_offset = offset * COL_DATA_SIZE
+        value = self.data[tru_offset:tru_offset+COL_DATA_SIZE]
         ret_value = int.from_bytes(value, byteorder='little')
         return ret_value
 
     def write(self, value):
         #Starting index for new entry saved as offset
         offset = self.num_records * COL_DATA_SIZE
-        #Write data into page starting at offset for COL_DATA_SIZE bytes
-        #del self.data[offset:offset+8]
+        #Convert value into bytes
         replace = value.to_bytes(COL_DATA_SIZE, byteorder='little')
+        #Write data into page starting at offset for COL_DATA_SIZE bytes
         self.data[offset:offset+COL_DATA_SIZE] = replace
         #Increment the num_record count for page
         self.num_records += 1
@@ -34,8 +34,12 @@ class Page:
 
     def edit(self, offset, value):
         #Edits the value starting at offset for COL_DATA_SIZE bytes to the new value
+        #Calculates the true offset for inserting data
+        tru_offset = offset * COL_DATA_SIZE
+        #Convert value into bytes
         replace = value.to_bytes(COL_DATA_SIZE, byteorder='little')
-        self.data[offset:offset+COL_DATA_SIZE] = replace
+        #Overrite data into page starting at offset for COL_DATA_SIZE bytes
+        self.data[tru_offset:tru_offset+COL_DATA_SIZE] = replace
 
 class PageBlock:
 
@@ -71,7 +75,6 @@ class PageBlock:
 
     def readCol(self, index, offset):
         val = self.pages[index].read(offset)
-        print(val)
         return val
 
     def writeCol(self, index, value):
@@ -107,7 +110,7 @@ class PageRange:
             #If no capacity, itterate to next base page_block
             self.base_count += 1
             #Checks that new base page_block index does not exceed bounds
-            if self.base_count == self.max_base:
+            if self.base_count >= self.max_base:
                 #Returns False if bound exceeded, new PageRange required
                 return False
             else:
@@ -119,11 +122,11 @@ class PageRange:
             
     def hasCapacityTail(self):
         #Checks working page_block[tail_count + max_base] for capacity
-        if self.page_blocks[self.tail_count + self.max_base].hasCapacityEntry == False :
+        if self.page_blocks[self.tail_count + self.max_base].hasCapacityEntry() == False :
             #If no capacity, itterate to next tail page_block
             self.tail_count += 1
             #Checks that new tail page_block index does not exceed bounds
-            if self.tail_count == self.max_tail:
+            if self.tail_count >= self.max_tail:
                 #Returns False if bound exceeded, new PageRange required
                 return False
             else:
@@ -132,51 +135,53 @@ class PageRange:
         else:
             #Current working page_block[base_count] has capacity
             return True
-
-    def getIndirection(self, pageBlock, offset):
-        value = self.page_blocks[pageBlock].getIndirection(offset)
-        print(value)
+    #Gets the indirection value stored in the record at page_Block and offset
+    def getIndirection(self, page_Block, offset):
+        value = self.page_blocks[page_Block].getIndirection(offset)
         return value
 
+    #Step calculation in determining the rid of the next available base record
     def nextBaseRid(self):
+        #Gets the prior part of the rid calculation from the current base PageBlock
         prerid = self.page_blocks[self.base_count].getNextOffset()
+        #Computes this step in the rid calculation and adds on the previous steps calculation
         rid = ((self.base_count) * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
         return rid
 
+    #Step calulation to determining the rid of the next available tail record
     def nextTailRid(self):
-        prerid = self.page_blocks[self.tail_count].getNextOffset()
-        rid = ((self.tail_count) * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
+        #Gets the prior part of the rid calculation from the current tail PageBlock
+        prerid = self.page_blocks[self.tail_count+self.max_base].getNextOffset()
+        #Computes this step in the rid calculation and adds on the previous steps calculation
+        rid = ((self.tail_count+self.max_base) * (PAGE_SIZE // COL_DATA_SIZE)) + prerid
         return rid
 
-    def readBlock(self, pageBlock, offset):
-        readBlock = []
+    #Reads the metaData + data columns of a record
+    def readBlock(self, page_Block, offset):
+        read_Block = []
         #For all columns in page_block[pageBlock]
-        for index in range(self.page_blocks[pageBlock].total):
+        for index in range(self.page_blocks[page_Block].total):
             #Read column i at ofset, append to readBlock
-            readBlock.append(self.page_blocks[pageBlock].readCol(index, offset))
-            #print(readBlock[index])
-        print(index)
-        
-        return readBlock
+            read_Block.append(self.page_blocks[page_Block].readCol(index, offset))
+        #Return compiled readBlock
+        return read_Block
 
+    #Writes the metaData + data columns of a concurrent record to a base record
     def writeBaseBlock(self, columns):
-        #Writes the index data column into index page of the block
+        #Write columns[index] into block pageBlock, page index, data[index]      
         for index in range(self.page_blocks[self.base_count].total):
-            #Write columns[index] into block pageBlock, page index, data[index]
             self.page_blocks[self.base_count].writeCol(index, columns[index])
 
-    def writeTailBlock(self, *columns):
-        #Writes the first data column into first page of the block, recording the offset
-        offset = self.page_blocks[self.tail_count].writeCol(0, columns[0])
-        #For all remaining columns
-        for index in range(1,self.total):
-            #Write columns[index] into block pageBlock, page index, data[index]
-            self.page_blocks[self.tail_count].writeCol(index, columns[index])
+    #Writes the metaData + data columns of a concurrent record to a tail record
+    def writeTailBlock(self, columns):
+        #Write columns[index] into PageBlock, page index, data[index]
+        for index in range(self.page_blocks[self.tail_count+self.max_base].total):
+            self.page_blocks[self.tail_count+self.max_base].writeCol(index, columns[index])
 
-        return offset
-
-    def editBlock(self, pageBlock, index, offset, value):
-        self.page_blocks[pageBlock].editCol(index, offset, value)
+    #Edits/replaces the value at a given page_block and offset, at the index of the record
+    def editBlock(self, page_Block, index, offset, value):
+        self.page_blocks[page_Block].editCol(index, offset, value)
    
-    def deleteRecord(self, pageBlock, offset):
-        self.page_blocks[pageBlock].deleteRecord(offset)
+    #Deletes the record at a given page_block and offset
+    def deleteRecord(self, page_Block, offset):
+        self.page_blocks[page_Block].deleteRecord(offset)

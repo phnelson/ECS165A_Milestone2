@@ -17,12 +17,9 @@ class Query:
 
     def delete(self, key):
         rid = self.table.page_directory.get(key)
-        #if rid == None:
-        #    return None
-        #else:
-        #go into memory with the rid -> (PageRange, offset), change value of Record.rid to None
+        #Go into memory with the rid -> (PageRange, offset), change value of Record.rid to None
         self.table.deleteRecord(rid)
-        #remove key from dictionary ,dict.pop(key) might be useful
+        #Remove key from dictionary ,dict.pop(key) might be useful
         self.table.page_directory.pop(key, None)
 
     """
@@ -40,20 +37,16 @@ class Query:
     # Read a record with specified key
     """
 
-    def select(self, key, *query_columns):
+    def select(self, key, query_columns):
         retList = []
         rid = self.table.page_directory.get(key)
-        #Go into memory and read the value stored at rid->indirection
+        #Validator for record presensce in table
+        if rid is None:
+            retList.append(None)
+            return retList
+        #Go into memory and read the value stored at rid or its indirection
         record = self.table.readRecord(rid)
-        returnRecord = []
-        #loops through range(len(query_columns)
-        for i in range(len(query_columns)):
-            if query_columns[i] == 1:
-                #read value into temp structure
-                returnRecord.append(record[i])
-                #returnRecord.append(None) ???
-        #returns temp structure of read values
-        retList.append(returnRecord)
+        retList.append(record)
         return retList
                 
     """
@@ -61,12 +54,8 @@ class Query:
     """
 
     def update(self, key, *columns):
-      schema_encoding = '0' * self.table.num_columns
-      key = columns[self.table.key]
       rid = self.table.page_directory.get(key)
-      if rid != None:
-          #go into memory with the rid, update next available tail record and link rid->inderection 
-          self.table.updateRecord(rid, columns)
+      self.table.updateRecord(rid, columns)          
 
     """
     :param start_range: int         # Start of the key range to aggregate 
@@ -81,15 +70,19 @@ class Query:
 
         num_cols = self.table.num_columns
 
+        #Preprocessing to set up selected_cols for query.select() calls
         for i in range(0, num_cols):
           if i == aggregate_column_index:
             selected_cols.append(1)
           else: 
             selected_cols.append(0)
 
-        for i in (start_range, end_range+1):
-          data = self.select(i, selected_cols)
-
-          sum_val += data[0].get_columns()[aggregate_column_index]
+        #Loops through the specified range
+        for i in range(start_range, end_range+1):
+          data = self.select(i, selected_cols)[0]
+          #Data validation to ensure it exists in table
+          if data is not None:
+              sum_val += data.getColumns()[aggregate_column_index]
+          #print(sum_val)
         
         return sum_val
