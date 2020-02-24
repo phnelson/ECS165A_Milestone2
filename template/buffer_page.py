@@ -1,4 +1,4 @@
-from template.page import *
+from template.page.py import *
 class BufferPage:
 
     def __init__(self, pid, page):

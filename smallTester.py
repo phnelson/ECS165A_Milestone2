@@ -11,8 +11,6 @@ query = Query(grades_table)
 keys = []
 
 # Measuring Insert Performance
-
-
 query.insert(92106429, 93, 5, 7, 0)
 query.insert(92106430, 8, 7, 6, 5)
 rec = query.select(92106429, [1,1,1,1,1])[0]

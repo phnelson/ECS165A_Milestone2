@@ -31,6 +31,7 @@ class Query:
         key = columns[self.table.key]
         # Insert value into available base -> get rid->(page, offset)
         rid = self.table.insertRecord(columns)
+        print("Insert: rid = ", rid)
         # Add key,rid pair to dictionary
         self.table.page_directory[key] = rid
 
@@ -71,7 +72,7 @@ class Query:
 
         num_cols = self.table.num_columns
 
-        # Preprocessing to set up selected_cols for query.select() calls
+        # Pre-processing to set up selected_cols for query.select() calls
         for i in range(0, num_cols):
             if i == aggregate_column_index:
                 selected_cols.append(1)

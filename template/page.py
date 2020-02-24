@@ -89,7 +89,6 @@ class PageBlock:
     def deleteRecord(self, offset):
         self.pages[self.rid].edit(offset, 0)
 
-
 class PageRange:
 
     def __init__(self, num_columns):
@@ -109,6 +108,7 @@ class PageRange:
 
     def hasCapacityBase(self):
         # Checks working page_block[base_count] for capacity
+        print("basecount : ", self.base_count)
         if self.page_blocks[self.base_count].hasCapacityEntry() == False:
             # If no capacity, iterate to next base page_block
             self.base_count += 1
@@ -165,7 +165,7 @@ class PageRange:
         read_Block = []
         # For all columns in page_block[pageBlock]
         for index in range(self.page_blocks[page_Block].total):
-            # Read column i at ofset, append to readBlock
+            # Read column i at offset, append to readBlock
             read_Block.append(self.page_blocks[page_Block].readCol(index, offset))
         # Return compiled readBlock
         return read_Block
@@ -173,6 +173,7 @@ class PageRange:
     # Writes the metaData + data columns of a concurrent record to a base record
     def writeBaseBlock(self, columns):
         # Write columns[index] into block pageBlock, page index, data[index]
+        # print(columns)
         for index in range(self.page_blocks[self.base_count].total):
             self.page_blocks[self.base_count].writeCol(index, columns[index])
 

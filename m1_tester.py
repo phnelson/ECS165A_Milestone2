@@ -3,7 +3,7 @@ from template.query import Query
 # from lstore.config import init
 
 from random import choice, randint, sample, seed
-from colorama import Fore, Back, Style
+#from colorama import Fore, Back, Style
 
 # Student Id and 4 grades
 # init()
@@ -63,6 +63,3 @@ for c in range(0, grades_table.num_columns):
             print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
         else:
             print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
-
-
-

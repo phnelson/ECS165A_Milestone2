@@ -1,4 +1,5 @@
 from template.page import *
+from template.buffer_range import *
 from template.index import *
 from time import time
 import sys
@@ -32,8 +33,9 @@ class Table:
         self.key = key
         self.num_columns = num_columns
         self.page_directory = {}
-        self.page_ranges = []
-        self.page_ranges.append(PageRange(self.num_columns))
+        self.buffer_pool_range = BufferPoolRange(BUFFER_POOL_SIZE_RANGE, num_columns)
+        # self.page_ranges = []
+        # self.page_ranges.append(PageRange(self.num_columns))
         self.curr_page_range = 0
 
     # Future function to merge tail records into base records
@@ -42,10 +44,11 @@ class Table:
 
     # Creates a new PageRange if needed, and appends it to page_ranges
     def newPageRange(self):
-        self.page_ranges.append(PageRange(self.num_columns))
+        # self.page_ranges.append(PageRange(self.num_columns))
+        # self.buffer_pool_range.
         self.curr_page_range = self.curr_page_range + 1
 
-    # Helper funtion for the translation of RID value to RID components
+    # Helper function for the translation of RID value to RID components
     def getOffset(self, rid):
         return rid % (PAGE_SIZE // COL_DATA_SIZE)
 
@@ -65,23 +68,25 @@ class Table:
     # Helper function to find the value of the next RID before writing to basepages
     def nextBaseRid(self):
         # Calls for calculation of the first two RID components
-        prerid = self.page_ranges[self.curr_page_range].nextBaseRid()
+        # #prerid = self.page_ranges[self.curr_page_range].nextBaseRid()
+        prerid = self.buffer_pool_range.nextBaseRid_Pool(self.curr_page_range)
         # Calculates the last RID component and adds it together with the previous for the next base RID
-        rid = (self.curr_page_range) * (BASE_CONST + TAIL_CONST) * (PAGE_SIZE // COL_DATA_SIZE) + prerid
+        rid = self.curr_page_range * (BASE_CONST + TAIL_CONST) * (PAGE_SIZE // COL_DATA_SIZE) + prerid
         return rid
 
     # Helper function to find the value of the next tail RID before writing to tail pages
     def nextTailRid(self):
         # Calls for calculation of the first two RID components
-        prerid = self.page_ranges[self.curr_page_range].nextTailRid()
+        # #prerid = self.page_ranges[self.curr_page_range].nextTailRid()
+        prerid = self.buffer_pool_range.nextTailRid_Pool(self.curr_page_range)
         # Calculates the last RID component and adds it together with the previous for the next tail RID
-        rid = (self.curr_page_range) * (BASE_CONST + TAIL_CONST) * (PAGE_SIZE // COL_DATA_SIZE) + prerid
+        rid = self.curr_page_range * (BASE_CONST + TAIL_CONST) * (PAGE_SIZE // COL_DATA_SIZE) + prerid
         return rid
 
     # Helper function unique for this metadata scheme
-    def formatCols(self, inder, rid, timestamp, schema, columns):
+    def formatCols(self, indir, rid, timestamp, schema, columns):
         format_cols = []
-        format_cols.append(inder)
+        format_cols.append(indir)
         format_cols.append(rid)
         format_cols.append(timestamp)
         format_cols.append(schema)
@@ -96,7 +101,8 @@ class Table:
         pageR = self.getPageR(rid)
         pageB = self.getPageB(rid)
         offset = self.getOffset(rid)
-        self.page_ranges[pageR].deleteRecord(pageB, offset)
+        # #self.page_ranges[pageR].deleteRecord(pageB, offset)
+        self.buffer_pool_range.deleteRecord_Pool(pageR, pageB, offset)
 
     # Function to check the indirection value of a record before doing a full read
     def checkIndirection(self, rid):
@@ -104,7 +110,8 @@ class Table:
         pageB = self.getPageB(rid)
         offset = self.getOffset(rid)
         # print(pageR, pageB, offset)
-        indir = self.page_ranges[pageR].getIndirection(pageB, offset)
+        # #indir = self.page_ranges[pageR].getIndirection(pageB, offset)
+        indir = self.buffer_pool_range.getIndirection_Pool(pageR, pageB, offset)
 
         if indir == 0:
             return rid
@@ -125,7 +132,8 @@ class Table:
         # print("Reading: Rid=",rid," pageR=",pageR," pageB=",pageB," offset=",offset)
 
         # Retrieves record
-        full_record = self.page_ranges[pageR].readBlock(pageB, offset)
+        # #full_record = self.page_ranges[pageR].readBlock(pageB, offset)
+        full_record = self.buffer_pool_range.readBlock_Pool(pageR, pageB, offset)
         data_record = full_record[len(full_record) - self.num_columns:]
 
         # print(full_record)
@@ -134,30 +142,34 @@ class Table:
         return ret_record
 
     def insertRecord(self, columns):
-        # Check for room for base pase, if not make more room
-        if self.page_ranges[self.curr_page_range].hasCapacityBase() == False:
+        # Check for room for base page, if not make more room
+        # #if self.page_ranges[self.curr_page_range].hasCapacityBase() == False:
+        if self.buffer_pool_range.hasCapacityBase_Pool(self.curr_page_range) == False:
             self.newPageRange()
 
-        inder = 0
+        indir = 0
         schema_encoding = 0  # '0' * self.num_columns
         cur_Time = 0  # time()
         base_rid = self.nextBaseRid()
-        format_columns = self.formatCols(inder, base_rid, cur_Time, schema_encoding, columns)
+        format_columns = self.formatCols(indir, base_rid, cur_Time, schema_encoding, columns)
         # print(format_columns)
-        self.page_ranges[self.curr_page_range].writeBaseBlock(format_columns)
+        # #self.page_ranges[self.curr_page_range].writeBaseBlock(format_columns)
+        self.buffer_pool_range.writeBaseBlock_Pool(self.curr_page_range, format_columns)
 
         return base_rid
 
     def updateRecord(self, rid, columns):
         # Check for room for tail page, if not make more room
-        if self.page_ranges[self.curr_page_range].hasCapacityTail() == False:
+        # #if self.page_ranges[self.curr_page_range].hasCapacityTail() == False:
+        if self.buffer_pool_range.hasCapacityTail_Pool(self.curr_page_range) == False:
             self.newPageRange()
 
         page_R = self.getPageR(rid)
         page_B = self.getPageB(rid)
         page_offset = self.getOffset(rid)
 
-        prev_vers = self.page_ranges[page_R].getIndirection(page_B, page_offset)
+        # #prev_vers = self.page_ranges[page_R].getIndirection(page_B, page_offset)
+        prev_vers = self.buffer_pool_range.getIndirection_Pool(page_R, page_B, page_offset)
         schema_encoding = 0  # '0' * self.num_columns
         currTime = 0  # time()
         tail_rid = self.nextTailRid()
@@ -179,6 +191,8 @@ class Table:
         format_columns = self.formatCols(prev_vers, tail_rid, currTime, schema_encoding, new_columns)
 
         # print(format_columns)
-        self.page_ranges[self.curr_page_range].writeTailBlock(format_columns)
+        # #self.page_ranges[self.curr_page_range].writeTailBlock(format_columns)
+        self.buffer_pool_range.writeTailBlock_Pool(self.curr_page_range, format_columns)
 
-        self.page_ranges[page_R].editBlock(page_B, INDIRECTION_COLUMN, page_offset, tail_rid)
+        # #self.page_ranges[page_R].editBlock(page_B, INDIRECTION_COLUMN, page_offset, tail_rid)
+        self.buffer_pool_range.editBlock_Pool(page_R, page_B, INDIRECTION_COLUMN, page_offset, tail_rid)
