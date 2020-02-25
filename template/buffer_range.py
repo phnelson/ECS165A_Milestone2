@@ -102,13 +102,22 @@ class BufferPoolRange:
     def pageRToFileName(self, pageR):
         return '%d.prange' % pageR
 
-    def evictRange(self, MRU):
+    def evictAll(self):
+        # for all slots in buffer_pool
+        for curr_range in range(0, self.buffer_size):
+            # if slot value is not empty
+            if not self.buffer_ranges[curr_range].getPageR() is None:
+                self.evictRange(curr_range)
+            else:
+                pass
+
+    def evictRange(self, index):
         # loop until MRU is free to evict from pool
         loop = True
         curr_range = None
 
         while(loop):
-            curr_range = self.buffer_ranges[MRU]
+            curr_range = self.buffer_ranges[index]
             loop = not curr_range.canEvict()
 
         if curr_range.writeBack():
@@ -127,10 +136,9 @@ class BufferPoolRange:
             # with open(self.pageRToFileName(curr_range.getPageR(), 'wb')) as f:
                 # pickle.dump(f, pickle.HIGHEST_PROTOCOL)
                 # # pickle.dump(f)
-
-        self.buffer_dic.pop(self.buffer_ranges[MRU].getPageR())
+        self.buffer_dic.pop(self.buffer_ranges[index].getPageR())
         curr_range.delete()
-        return MRU
+        return index
 
     def loadRange(self, pageR):
         #print("Range Loader")

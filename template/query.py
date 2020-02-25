@@ -50,6 +50,19 @@ class Query:
         record = self.table.readRecord(rid)
         retList.append(record)
         return retList
+    '''
+    def select(self, key, column, query_columns):
+        retList = []
+        rids[] = self.table.index.locate(column, key)
+        if len(rids) == 0:
+            retList.append(None)
+            return retList
+        else:
+            for rec in range(0,len(rids)):
+
+
+        return retList
+    '''
 
     """
     # Update a record with specified key and columns

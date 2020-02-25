@@ -3,6 +3,7 @@ A data structure holding indices for various columns of a table.
 Key column should be indexed by default, other columns can be indexed through this object.
 Indices are usually B-Trees, but other data structures can be used as well.
 """
+import pickle
 
 from template.config import *
 
@@ -13,7 +14,6 @@ class Index:
         # One index for each table. All our empty initially.
         self.indices = [None] * num_columns
         # Populate index for key column
-        self.create_index(self, table, table.key)
         pass
 
     """
@@ -37,8 +37,8 @@ class Index:
     def create_index(self, column_number):
         # loop through all base blocks that are not historic
 
-        # for pageR in self.table.curr_page_range:
-            # working_range = pickle.load(%d.prange %pageR) into memory
+        for pageR in self.table.curr_page_range:
+            working_range = pickle.load('%d.prange' %pageR)
             #if working_range.getHistorical() == False:
             #    pass
             #else:

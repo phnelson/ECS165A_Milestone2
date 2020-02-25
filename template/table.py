@@ -43,6 +43,15 @@ class Table:
     def __merge(self):
         pass
 
+    def __str__(self):
+        return self.name
+
+    def close(self):
+        self.buffer_pool_range.evictAll()
+
+    def getName(self):
+        return self.name
+
     # Creates a new PageRange if needed, and appends it to page_ranges
     def newPageRange(self):
         # self.page_ranges.append(PageRange(self.num_columns))
