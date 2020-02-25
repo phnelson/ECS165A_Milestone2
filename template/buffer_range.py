@@ -100,40 +100,50 @@ class BufferPoolRange:
 
 
     def pageRToFileName(self, pageR):
-        string = str(pageR) + ".prange"
-        # #string = '%d.prange' % pageR
-        return string
+        return '%d.prange' % pageR
 
-    def evictRange(self):
+    def evictRange(self, MRU):
         # loop until MRU is free to evict from pool
         loop = True
         curr_range = None
 
         while(loop):
-            curr_range = self.buffer_ranges[self.MRU]
+            curr_range = self.buffer_ranges[MRU]
             loop = not curr_range.canEvict()
 
         if curr_range.writeBack():
             #print("WriteBack!")
-            f = open('%d.prange' % curr_range.getPageR(), 'wb')
+
             #with open(self.pageRToFileName(curr_range.getPageR()), 'wb') as output:
+            # f = open('%d.prange' % curr_range.getPageR(), 'wb')
+            # pickle.dump(curr_range.getRange(), f, pickle.HIGHEST_PROTOCOL)
+
+            f = open('%d.prange' % curr_range.getPageR(), 'wb')
+            # with open(self.pageRToFileName(curr_range.getPageR()), 'wb') as output:
             pickle.dump(curr_range.getRange(), f, pickle.HIGHEST_PROTOCOL)
 
-        self.buffer_dic.pop(self.buffer_ranges[self.MRU].getPageR())
+            # Pickling contained within a with block, as it closes the file automatically after exiting the block.
+            # # with open('%d.prange' % curr_range.getPageR(), 'wb') as f:
+            # with open(self.pageRToFileName(curr_range.getPageR(), 'wb')) as f:
+                # pickle.dump(f, pickle.HIGHEST_PROTOCOL)
+                # # pickle.dump(f)
+
+        self.buffer_dic.pop(self.buffer_ranges[MRU].getPageR())
         curr_range.delete()
-        return self.MRU
+        return MRU
 
     def loadRange(self, pageR):
         #print("Range Loader")
         dirty = False
         if len(self.buffer_dic) >= self.buffer_size:
-            index = self.evictRange()
+            index = self.evictRange(self.MRU)
         else:
             index = len(self.buffer_dic)
 
         curr_range = None
         if path.exists(self.pageRToFileName(pageR)):
-            with open(self.pageRToFileName(pageR), 'rb') as input:
+            #with open(self.pageRToFileName(pageR), 'rb') as input:
+            with open('%d.prange' % pageR, 'rb') as input:
                 curr_range = pickle.load(input)
         else:
             curr_range = PageRange(self.num_columns)
@@ -215,7 +225,3 @@ class BufferPoolRange:
         ret_value = self.buffer_ranges[index].deleteRecord_Range(page_block, offset)
         self.MRU = index
         return ret_value
-
-
-
-

@@ -1,6 +1,6 @@
 from template.page import *
 from template.buffer_range import *
-from template.index import *
+from template.index import Index
 from time import time
 import sys
 
@@ -32,7 +32,8 @@ class Table:
         self.name = name
         self.key = key
         self.num_columns = num_columns
-        self.page_directory = {}
+        self.page_directory = {} # Replace with index, and all references inside table and query with index API
+        # self.index = Index(self, self.num_columns)
         self.buffer_pool_range = BufferPoolRange(BUFFER_POOL_SIZE_RANGE, num_columns)
         # self.page_ranges = []
         # self.page_ranges.append(PageRange(self.num_columns))
@@ -54,11 +55,11 @@ class Table:
 
     # Helper function for the translation of RID value to RID components
     def getPageR(self, rid):
-        return (rid // ((BASE_CONST + TAIL_CONST) * (PAGE_SIZE // COL_DATA_SIZE)))
+        return rid // ((BASE_CONST + TAIL_CONST) * (PAGE_SIZE // COL_DATA_SIZE))
 
     # Helper function for the translation of RID value to RID components
     def getPageB(self, rid):
-        return ((rid // (PAGE_SIZE // COL_DATA_SIZE)) % (BASE_CONST + TAIL_CONST))
+        return (rid // (PAGE_SIZE // COL_DATA_SIZE)) % (BASE_CONST + TAIL_CONST)
 
     # Helper function for the translation of RID components to RID value
     def getRID(self, pageR, pageB, offset):

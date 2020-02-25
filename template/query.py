@@ -31,7 +31,7 @@ class Query:
         key = columns[self.table.key]
         # Insert value into available base -> get rid->(page, offset)
         rid = self.table.insertRecord(columns)
-        print("Insert: rid = ", rid)
+        # print("Insert: rid = ", rid)
         # Add key,rid pair to dictionary
         self.table.page_directory[key] = rid
 

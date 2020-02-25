@@ -93,6 +93,7 @@ class PageRange:
 
     def __init__(self, num_columns):
         # Calculate the total number of pages in the range
+        self.historic = False
         self.total = BASE_CONST + TAIL_CONST
         # Vector for pages, and set constants for current capacity and max capacity
         self.num_columns = num_columns
@@ -106,9 +107,15 @@ class PageRange:
         for i in range(self.total):
             self.page_blocks.append(PageBlock(self.num_columns))
 
+    def getHistoric(self):
+        return self.historic
+
+    def markHistoric(self):
+        self.historic = True
+
     def hasCapacityBase(self):
         # Checks working page_block[base_count] for capacity
-        print("basecount : ", self.base_count)
+        # print("basecount : ", self.base_count)
         if self.page_blocks[self.base_count].hasCapacityEntry() == False:
             # If no capacity, iterate to next base page_block
             self.base_count += 1
