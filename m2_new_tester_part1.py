@@ -53,6 +53,7 @@ for _ in range(10):
             original = records[key].copy()
             records[key][i] = value
             query.update(key, *updated_columns)
+            # print(key)
             record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
             error = False
             for j, column in enumerate(record.columns):

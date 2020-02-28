@@ -1,6 +1,5 @@
 from template.table import Table, Record
 
-
 # from template.index import Index
 
 class Query:
@@ -57,29 +56,36 @@ class Query:
 
     def select(self, key, column, query_columns):
         retList = []
-        #print("test", self.table.index.indices[1])
+        # print("test", key)
         rids = self.table.index.locate(column, key)
+        # print(rids)
 
         # Validator for record presence in table
         if rids is None:
             retList.append(None)
-            return retList
+            return [None]
 
         for rid in rids:
             record = self.table.readRecord(rid)
+            # print("record:", record)
             formatted_record = []
 
-            for i in range(0, len(query_columns)):
-                if query_columns[i] == 1:
-                    formatted_record.append(record.columns[i])
-                else:
-                    formatted_record.append(0)
+            if record is None:
+                pass
+            else:
+                # print(record)
+                for i in range(0, len(query_columns)):
+                    # print("checkpoint: i = ", i)
+                    if query_columns[i] == 1:
+                        formatted_record.append(record.columns[i])
+                    else:
+                        formatted_record.append(0)
 
 
             #retList.append(formatted_record)
 
-            created_record = Record(record.columns[self.table.key], self.table.key, formatted_record)
-            retList.append(created_record)
+                created_record = Record(record.columns[self.table.key], self.table.key, formatted_record)
+                retList.append(created_record)
             #retList.append(record)
 
         return retList
@@ -114,6 +120,8 @@ class Query:
             else:
                 selected_cols.append(0)
 
+        # rid_list = self.table.index.locate_range(start_range, end_range)
+
         # Loops through the specified range
         for i in range(start_range, end_range+1):
             data = self.select(i, 0, selected_cols)
@@ -128,5 +136,6 @@ class Query:
                     else:
                         sum_val += data[0].getColumns()[aggregate_column_index]
             # print(sum_val)
+
 
         return sum_val

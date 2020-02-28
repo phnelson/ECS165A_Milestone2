@@ -54,8 +54,8 @@ class Index:
         dic = self.table.getIndex(column)
         #print(dic)
         ret_val = dic.get(value)
+        # print("search:", value, "found:", ret_val)
         return ret_val
-        pass
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
@@ -160,4 +160,3 @@ class Index:
             self.indices[column_number] = None
         else:
             pass
-

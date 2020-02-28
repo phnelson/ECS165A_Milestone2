@@ -9,6 +9,7 @@ class Page:
         self.data = bytearray(PAGE_SIZE)
 
     def hasCapacity(self):
+        # print("capacity check:", self.num_records)
         if self.num_records < self.max_records:
             return True
         else:
@@ -81,7 +82,8 @@ class PageBlock:
 
     def writeCol(self, index, value):
         offset = self.pages[index].write(value)
-        return (index * self.entry_max) + offset
+        # return (index * self.entry_max) + offset
+        return offset / COL_DATA_SIZE
 
     def editCol(self, index, offset, value):
         self.pages[index].edit(offset, value)
@@ -117,6 +119,7 @@ class PageRange:
         # Checks working page_block[base_count] for capacity
         # print("basecount : ", self.base_count)
         if self.page_blocks[self.base_count].hasCapacityEntry() == False:
+            # print("basecount fail!")
             # If no capacity, iterate to next base page_block
             self.base_count += 1
             # Checks that new base page_block index does not exceed bounds
@@ -132,8 +135,10 @@ class PageRange:
 
     def hasCapacityTail(self):
         # Checks working page_block[tail_count + max_base] for capacity
-        if self.page_blocks[self.tail_count + self.max_base].hasCapacityEntry() == False:
+        # if self.page_blocks[self.tail_count + self.max_base].hasCapacityEntry() == False:
+        if self.page_blocks[self.max_base + self.tail_count].pages[0].num_records >= PAGE_SIZE / COL_DATA_SIZE:
             # If no capacity, iterate to next tail page_block
+            # print("tail count incri")
             self.tail_count += 1
             # Checks that new tail page_block index does not exceed bounds
             if self.tail_count >= self.max_tail:
@@ -182,13 +187,22 @@ class PageRange:
         # Write columns[index] into block pageBlock, page index, data[index]
         # print(columns)
         for index in range(self.page_blocks[self.base_count].total):
-            self.page_blocks[self.base_count].writeCol(index, columns[index])
+             val = self.page_blocks[self.base_count].writeCol(index, columns[index])
+
+        return val
 
     # Writes the metaData + data columns of a concurrent record to a tail record
     def writeTailBlock(self, columns):
         # Write columns[index] into PageBlock, page index, data[index]
+        # print("tail block value!:", self.tail_count)
+        # print("tail block cap!:", self.page_blocks[self.max_base + self.tail_count].pages[0].num_records)
+        # if self.page_blocks[self.max_base + self.tail_count].pages[0].num_records >= PAGE_SIZE/COL_DATA_SIZE:
+        #     self.tail_count += 1
         for index in range(self.page_blocks[self.tail_count + self.max_base].total):
-            self.page_blocks[self.tail_count + self.max_base].writeCol(index, columns[index])
+            val = self.page_blocks[self.tail_count + self.max_base].writeCol(index, columns[index])
+            #print("val...:", val)
+
+        return ((self.tail_count + self.max_base)*(PAGE_SIZE / COL_DATA_SIZE)) + int(val)
 
     # Edits/replaces the value at a given page_block and offset, at the index of the record
     def editBlock(self, page_Block, index, offset, value):

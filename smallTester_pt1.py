@@ -37,9 +37,7 @@ print(rec.key)
 record = query.select(92106429, 0, [1, 1, 1, 1, 1])[0]
 updater = [None,None,100,None,None]
 updater2 =[None,None,None,100,None]
-for i in range(0,5000):
-    query.update(92106429, *updater)
-
+query.update(92106429, *updater)
 rec3 = query.select(92106429, 0, [1,1,1,1,1])[0]
 print(rec3)
 query.update(92106429, *updater2)
