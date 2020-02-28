@@ -17,11 +17,14 @@ class Query:
     """
 
     def delete(self, key):
-        rid = self.table.page_directory.get(key)
+        # print("Deleting key:", key)
+        # rid = self.table.page_directory.get(key)
+        rid = self.table.index.locate(self.table.key, key)[0]
         # Go into memory with the rid -> (PageRange, offset), change value of Record.rid to None
         self.table.deleteRecord(rid)
         # Remove key from dictionary ,dict.pop(key) might be useful
-        self.table.page_directory.pop(key, None)
+        # self.table.page_directory.pop(key, None)
+        self.table.index.deletePair(self.table.key, key, rid)
 
     """
     # Insert a record with specified columns
@@ -33,12 +36,12 @@ class Query:
         rid = self.table.insertRecord(columns)
         # print("Insert: rid = ", rid)
         # Add key,rid pair to dictionary
-        self.table.page_directory[key] = rid
+        # self.table.page_directory[key] = rid
 
     """
     # Read a record with specified key
     """
-
+    '''Outdated select function
     def select(self, key, query_columns):
         retList = []
         rid = self.table.page_directory.get(key)
@@ -51,25 +54,44 @@ class Query:
         retList.append(record)
         return retList
     '''
+
     def select(self, key, column, query_columns):
         retList = []
-        rids[] = self.table.index.locate(column, key)
-        if len(rids) == 0:
+        #print("test", self.table.index.indices[1])
+        rids = self.table.index.locate(column, key)
+
+        # Validator for record presence in table
+        if rids is None:
             retList.append(None)
             return retList
-        else:
-            for rec in range(0,len(rids)):
 
+        for rid in rids:
+            record = self.table.readRecord(rid)
+            formatted_record = []
+
+            for i in range(0, len(query_columns)):
+                if query_columns[i] == 1:
+                    formatted_record.append(record.columns[i])
+                else:
+                    formatted_record.append(0)
+
+
+            #retList.append(formatted_record)
+
+            created_record = Record(record.columns[self.table.key], self.table.key, formatted_record)
+            retList.append(created_record)
+            #retList.append(record)
 
         return retList
-    '''
 
     """
     # Update a record with specified key and columns
     """
 
     def update(self, key, *columns):
-        rid = self.table.page_directory.get(key)
+        # rid = self.table.page_directory.get(key)
+        rid = self.table.index.indices[self.table.key][key][0]
+        #print("update test, rid:", rid)
         self.table.updateRecord(rid, columns)
 
     """
@@ -93,11 +115,18 @@ class Query:
                 selected_cols.append(0)
 
         # Loops through the specified range
-        for i in range(start_range, end_range + 1):
-            data = self.select(i, selected_cols)[0]
+        for i in range(start_range, end_range+1):
+            data = self.select(i, 0, selected_cols)
+            #print("data:", data)
             # Data validation to ensure it exists in table
             if data is not None:
-                sum_val += data.getColumns()[aggregate_column_index]
+                if len(data) == 0:
+                    pass
+                else:
+                    if data[0] is None:
+                        pass
+                    else:
+                        sum_val += data[0].getColumns()[aggregate_column_index]
             # print(sum_val)
 
         return sum_val

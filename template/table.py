@@ -33,18 +33,28 @@ class Table:
         self.key = key
         self.num_columns = num_columns
         self.page_directory = {} # Replace with index, and all references inside table and query with index API
-        # self.index = Index(self, self.num_columns)
+        self.index = Index(self, self.num_columns)
         self.buffer_pool_range = BufferPoolRange(BUFFER_POOL_SIZE_RANGE, num_columns)
         # self.page_ranges = []
         # self.page_ranges.append(PageRange(self.num_columns))
         self.curr_page_range = 0
+        self.insertRecord([0] * num_columns)
 
     # Future function to merge tail records into base records
     def __merge(self):
+        # create deep copy of page range
+
+        #for x offset in base page
         pass
 
     def __str__(self):
         return self.name
+
+    def createIndex(self, column_num):
+        self.index.create_index(column_num)
+
+    def getIndex(self, column_num):
+        return self.index.getIndex(column_num)
 
     def close(self):
         self.buffer_pool_range.evictAll()
@@ -144,6 +154,10 @@ class Table:
         # Retrieves record
         # #full_record = self.page_ranges[pageR].readBlock(pageB, offset)
         full_record = self.buffer_pool_range.readBlock_Pool(pageR, pageB, offset)
+
+        if full_record[RID_COLUMN] == 0:
+            return None
+
         data_record = full_record[len(full_record) - self.num_columns:]
 
         # print(full_record)
@@ -165,6 +179,8 @@ class Table:
         # print(format_columns)
         # #self.page_ranges[self.curr_page_range].writeBaseBlock(format_columns)
         self.buffer_pool_range.writeBaseBlock_Pool(self.curr_page_range, format_columns)
+
+        self.index.insertPair(self.key, columns[self.key], base_rid)
 
         return base_rid
 

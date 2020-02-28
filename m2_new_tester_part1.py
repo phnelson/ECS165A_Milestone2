@@ -4,7 +4,6 @@ from template.query import Query
 from random import choice, randint, sample, seed
 
 db = Database()
-#db.open('~/ECS165')
 db.open('ECS165')
 # Student Id and 4 grades
 grades_table = db.create_table('Grades', 5, 0)
@@ -19,17 +18,30 @@ for i in range(0, 1000):
 keys = sorted(list(records.keys()))
 print("Insert finished")
 
-for key in keys:
-    record = query.select(key, 0, [1, 1, 1, 1, 1])[0] # original line
-    # record = query.select(key, [1, 1, 1, 1, 1])[0]  # line to test functionality without index implemented
-    error = False
-    for i, column in enumerate(record.columns):
-        if column != records[key][i]:
+grades_table.index.create_index(1)
+grades_table.index.create_index(2)
+grades_table.index.create_index(3)
+grades_table.index.create_index(4)
+
+_records = [records[key] for key in keys]
+for c in range(grades_table.num_columns):
+    _keys = list(set(record[c] for record in _records))
+    index = {v: [record for record in _records if record[c] == v] for v in _keys}
+    for key in _keys:
+        # results = query.select(key, c, [1, 1, 1, 1, 1])
+        results = [r.columns for r in query.select(key, c, [1, 1, 1, 1, 1])]
+        error = False
+        if len(results) != len(index[key]):
+            print("len incorrect")
             error = True
-    if error:
-        print('select error on', key, ':', record, ', correct:', records[key])
-    # else:
-    #     print('select on', key, ':', record)
+        if not error:
+            for record in index[key]:
+                if record not in results:
+                    error = True
+                    break
+        if error:
+            print('select error on', key, ', column', c, ':', results, ', correct:', index[key])
+
 print("Select finished")
 
 for _ in range(10):
@@ -41,8 +53,7 @@ for _ in range(10):
             original = records[key].copy()
             records[key][i] = value
             query.update(key, *updated_columns)
-            record = query.select(key, 0, [1, 1, 1, 1, 1])[0] # original line
-            # record = query.select(key, [1,1,1,1,1])[0] # line to test functionality without index implemented
+            record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
             error = False
             for j, column in enumerate(record.columns):
                 if column != records[key][j]:
@@ -61,6 +72,6 @@ for i in range(0, 100):
     if column_sum != result:
         print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
     # else:
-        # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
+    #     print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 print("Aggregate finished")
 db.close()

@@ -38,6 +38,7 @@ class BufferRange:
             return False
 
     def delete(self):
+        self.pageR = None
         self.dirty = 0
         self.pin = 0
         self.range_data = None
@@ -98,12 +99,13 @@ class BufferPoolRange:
 
         self.next_available = 0 #[0, buffer_size - 1]
 
-
     def pageRToFileName(self, pageR):
         return '%d.prange' % pageR
 
     def evictAll(self):
         # for all slots in buffer_pool
+        # print("EvictAll: dic = ", self.buffer_dic)
+        # print("dic size = ", len(self.buffer_dic))
         for curr_range in range(0, self.buffer_size):
             # if slot value is not empty
             if not self.buffer_ranges[curr_range].getPageR() is None:
@@ -136,6 +138,8 @@ class BufferPoolRange:
             # with open(self.pageRToFileName(curr_range.getPageR(), 'wb')) as f:
                 # pickle.dump(f, pickle.HIGHEST_PROTOCOL)
                 # # pickle.dump(f)
+        # print(self.buffer_dic)
+        # print("Evicting range:", self.buffer_ranges[index].getPageR())
         self.buffer_dic.pop(self.buffer_ranges[index].getPageR())
         curr_range.delete()
         return index
@@ -160,9 +164,12 @@ class BufferPoolRange:
         self.buffer_ranges[index].setPageR(pageR)
         self.buffer_ranges[index].setRange(curr_range)
         if dirty:
-            self.buffer_ranges[index].writeBack()
+            # self.buffer_ranges[index].writeBack()
+            self.buffer_ranges[index].setDirty()
 
+        #print("Loading range:", pageR)
         self.buffer_dic[pageR] = index
+        #print(self.buffer_dic)
         return index
 
     def getRange(self, pageR):

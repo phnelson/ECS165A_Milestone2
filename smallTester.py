@@ -6,7 +6,7 @@ from random import choice, randrange
 import sys
 '''
 print(os.getcwd())
-os.chdir('~/ECS165A/')
+os.chdir('~/ECS165/')
 #os.chdir('~')
 print(os.getcwd())
 
@@ -16,7 +16,7 @@ sys.exit()
 # Student Id and 4 grades
 
 db = Database()
-#db.open('~/ECS165A/')
+db.open('ECS165')
 grades_table = db.create_table('Grades', 5, 0)
 query = Query(grades_table)
 keys = []
@@ -44,8 +44,8 @@ print(rec4)
 
 db.close()
 db2 = Database()
-#db2.open('~/ECS165A/')
-db2.open()
+db2.open('ECS165')
+#db2.open()
 g_table = db2.get_table('Grades')
 print(g_table)
 q = Query(g_table)
